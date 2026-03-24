@@ -1,9 +1,66 @@
 """Command handlers for slash commands.
 
 Each handler is a function that takes arguments and returns a string response.
+For Telegram mode, handlers also return inline keyboard markup.
 """
 
 from services.lms import check_health, get_labs, get_pass_rates
+
+
+# Inline keyboard markup for common actions
+# These are aiogram InlineKeyboardMarkup definitions
+# Format: {"text": "Button Label", "callback_data": "action"}
+
+START_KEYBOARD = {
+    "inline_keyboard": [
+        [
+            {"text": "📋 List Labs", "callback_data": "cmd_labs"},
+            {"text": "🏥 Health Check", "callback_data": "cmd_health"},
+        ],
+        [
+            {"text": "📊 Score Distribution", "callback_data": "prompt_scores"},
+            {"text": "🏆 Top Learners", "callback_data": "prompt_top"},
+        ],
+        [
+            {"text": "❓ Help", "callback_data": "cmd_help"},
+        ],
+    ]
+}
+
+HELP_KEYBOARD = {
+    "inline_keyboard": [
+        [
+            {"text": "📋 View Labs", "callback_data": "cmd_labs"},
+            {"text": "📊 Scores for Lab", "callback_data": "prompt_scores"},
+        ],
+        [
+            {"text": "🏆 Top Learners", "callback_data": "prompt_top"},
+            {"text": "👥 Group Performance", "callback_data": "prompt_groups"},
+        ],
+        [
+            {"text": "📈 Completion Rate", "callback_data": "prompt_completion"},
+            {"text": "🕐 Timeline", "callback_data": "prompt_timeline"},
+        ],
+    ]
+}
+
+
+def get_start_keyboard() -> dict:
+    """Get the inline keyboard markup for /start command.
+
+    Returns:
+        Dict suitable for aiogram's reply_markup parameter
+    """
+    return START_KEYBOARD
+
+
+def get_help_keyboard() -> dict:
+    """Get the inline keyboard markup for /help command.
+
+    Returns:
+        Dict suitable for aiogram's reply_markup parameter
+    """
+    return HELP_KEYBOARD
 
 
 async def handle_start(args: str) -> str:
@@ -15,7 +72,26 @@ async def handle_start(args: str) -> str:
     Returns:
         Welcome message
     """
-    return "Welcome to the SE Toolkit Bot! 🤖\n\nUse /help to see available commands."
+    return """Welcome to the SE Toolkit Bot! 🤖
+
+I'm your assistant for the learning management system. I can help you with:
+
+• Viewing labs and tasks
+• Checking scores and pass rates
+• Finding top performers
+• Comparing group performance
+• Tracking completion rates
+• Viewing submission timelines
+
+You can:
+1. Use slash commands like /help, /labs, /scores
+2. Ask questions in plain language like:
+   - "What labs are available?"
+   - "Show me scores for lab 4"
+   - "Which lab has the lowest pass rate?"
+   - "Who are the top 5 students?"
+
+Use the buttons below for quick actions!"""
 
 
 async def handle_help(args: str) -> str:
@@ -35,7 +111,15 @@ async def handle_help(args: str) -> str:
 /labs - List available labs
 /scores <lab> - Show scores for a specific lab
 
-You can also ask questions in plain language!"""
+Example queries you can ask in plain language:
+• "What labs are available?"
+• "Show me scores for lab 4"
+• "Who are the top 5 students in lab 4?"
+• "Which lab has the lowest pass rate?"
+• "Compare group A and group B"
+• "How many students are enrolled?"
+
+Use the buttons below for quick actions!"""
 
 
 async def handle_health(args: str) -> str:
