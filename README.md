@@ -91,3 +91,73 @@ By the end of this lab, you should be able to say:
 2. [Backend Integration](./lab/tasks/required/task-2.md) — P0: slash commands + real data
 3. [Intent-Based Natural Language Routing](./lab/tasks/required/task-3.md) — P1: LLM tool use
 4. [Containerize and Document](./lab/tasks/required/task-4.md) — P3: containerize + deploy
+
+## Deploy
+
+### Prerequisites
+
+Ensure you have the following environment files configured:
+
+- **`.env.bot.secret`** — Bot runtime configuration:
+  - `BOT_TOKEN` — Telegram bot token from @BotFather
+  - `LMS_API_URL` — Backend URL (use `http://backend:8000` in Docker)
+  - `LMS_API_KEY` — LMS API key
+  - `LLM_API_KEY` — LLM API key
+  - `LLM_API_BASE_URL` — LLM API URL (use `http://host.docker.internal:42005/v1` for Docker)
+  - `LLM_API_MODEL` — Model name (e.g., `coder-model`)
+
+- **`.env.docker.secret`** — Docker Compose environment:
+  - All backend/postgres/pgadmin/caddy variables
+  - Bot variables: `BOT_TOKEN`, `LMS_API_URL`, `LMS_API_KEY`, `LLM_API_KEY`, `LLM_API_BASE_URL`, `LLM_API_MODEL`
+
+### Start the bot
+
+```bash
+cd ~/se-toolkit-lab-7
+
+# Stop any running nohup bot process
+pkill -f "bot.py" 2>/dev/null
+
+# Build and start all services
+docker compose --env-file .env.docker.secret up --build -d
+
+# Check all services are running
+docker compose --env-file .env.docker.secret ps
+```
+
+You should see `bot` running alongside `backend`, `postgres`, `caddy`.
+
+### Verify the bot
+
+```bash
+# Check bot container status
+docker compose --env-file .env.docker.secret ps bot
+
+# View bot logs (look for "Application started" and "getUpdates")
+docker compose --env-file .env.docker.secret logs bot --tail 20
+```
+
+### Test in Telegram
+
+Send these commands to your bot:
+
+- `/start` — Welcome message
+- `/health` — Backend health check
+- `/labs` — List available labs
+- "what labs are available?" — Natural language query (LLM-powered)
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---------|--------------|
+| Bot container keeps restarting | Check logs: `docker compose logs bot`. Usually missing env var or import error. |
+| `/health` fails but worked before | `LMS_API_URL` must be `http://backend:8000` (not `localhost:42002`). |
+| LLM queries fail | `LLM_API_BASE_URL` must use `host.docker.internal` (not `localhost`). |
+| "BOT_TOKEN is required" | Bot env vars need to be in `.env.docker.secret`. |
+| Build fails at `uv sync --frozen` | `uv.lock` must be copied in Dockerfile — check your `COPY` commands. |
+
+### Stop the bot
+
+```bash
+docker compose --env-file .env.docker.secret down
+```
