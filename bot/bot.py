@@ -10,6 +10,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command, CommandStart
 from config import load_config
 from handlers.commands import (
     handle_start,
@@ -80,18 +82,63 @@ async def run_test_mode(command: str) -> None:
 
 async def run_telegram_mode() -> None:
     """Run the bot in normal Telegram mode.
-    
+
     Connects to Telegram and listens for messages.
     """
     config = load_config()
-    
+
     if not config["BOT_TOKEN"]:
         print("Error: BOT_TOKEN not set. Please configure .env.bot.secret")
         sys.exit(1)
-    
-    # TODO: Initialize aiogram bot and start polling
-    print("Telegram mode not yet implemented. Use --test mode for now.")
-    print(f"Bot token configured: {bool(config['BOT_TOKEN'])}")
+
+    # Initialize aiogram bot and dispatcher
+    bot = Bot(token=config["BOT_TOKEN"])
+    dp = Dispatcher()
+
+    # Register command handlers
+    @dp.message(CommandStart())
+    async def start_handler(message: types.Message) -> None:
+        """Handle /start command."""
+        response = await handle_start("")
+        await message.answer(response)
+
+    @dp.message(Command("help"))
+    async def help_handler(message: types.Message) -> None:
+        """Handle /help command."""
+        response = await handle_help("")
+        await message.answer(response)
+
+    @dp.message(Command("health"))
+    async def health_handler(message: types.Message) -> None:
+        """Handle /health command."""
+        response = await handle_health("")
+        await message.answer(response)
+
+    @dp.message(Command("labs"))
+    async def labs_handler(message: types.Message) -> None:
+        """Handle /labs command."""
+        response = await handle_labs("")
+        await message.answer(response)
+
+    @dp.message(Command("scores"))
+    async def scores_handler(message: types.Message) -> None:
+        """Handle /scores command."""
+        # Extract lab argument from command
+        args = message.text.split(maxsplit=1)
+        lab_arg = args[1] if len(args) > 1 else ""
+        response = await handle_scores(lab_arg)
+        await message.answer(response)
+
+    @dp.message()
+    async def text_handler(message: types.Message) -> None:
+        """Handle plain text messages via LLM intent routing."""
+        if message.text:
+            response = await handle_intent(message.text, config)
+            await message.answer(response)
+
+    # Start polling
+    print("Application started")
+    await dp.start_polling(bot)
 
 
 async def main() -> None:
