@@ -18,6 +18,7 @@ from handlers.commands import (
     handle_labs,
     handle_scores,
 )
+from handlers.intent_router import handle_intent
 
 
 # Command router - maps command names to handler functions
@@ -32,23 +33,27 @@ COMMAND_HANDLERS = {
 
 async def process_command(command: str) -> str:
     """Process a command string and return the response.
-    
+
     Args:
         command: The full command string, e.g., "/start" or "/scores lab-04"
-    
+            or plain text like "what labs are available"
+
     Returns:
         The response text from the handler
     """
+    # Load config for LLM
+    config = load_config()
+
     # Parse the command
     if not command.startswith("/"):
-        # Plain text - will be handled by LLM in Task 3
-        return f"Plain text received: {command} (LLM routing coming in Task 3)"
-    
+        # Plain text - route through LLM
+        return await handle_intent(command, config)
+
     # Remove leading slash and split into command + args
     parts = command[1:].split(maxsplit=1)
     cmd_name = parts[0].lower()
     cmd_args = parts[1] if len(parts) > 1 else ""
-    
+
     # Find and call the handler
     handler = COMMAND_HANDLERS.get(cmd_name)
     if handler:
